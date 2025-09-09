@@ -1,0 +1,10 @@
+Hola {student_name}. Espero que se encuentre bien.
+
+Le comunico que la nota obtenida en el {test} fue de {grade}.
+Esto significa que obtuvo un {parcent} de {total}%.
+
+{attachment}
+Cualquier consulta o reclamo quedo atento.
+
+Saludos
+{sign}
