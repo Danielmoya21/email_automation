@@ -1,6 +1,6 @@
 import pandas as pd
 from pathlib import Path
-from core import utils
+from ucr_tools.core import utils
 import smtplib, ssl
 import os, sys
 import traceback

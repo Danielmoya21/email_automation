@@ -4,6 +4,9 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
+import ssl
+import os
+import smtplib
 
 def remove_white_rows(df:pd.DataFrame) -> pd.DataFrame:
     return df[~(df.isna().sum(axis=1)>4)].reset_index(drop=True)#-- Solo necesario si la lista no ha sido depurada
@@ -53,3 +56,27 @@ def get_student_pdf(pdf_files) -> pd.DataFrame:
         
     return pd.DataFrame(student_pdf, columns=['student_id', 'pdf_dir'])
 
+def connect_ucr(user=os.getenv('ucr_email_user'), password=os.getenv('ucr_email_password')):
+    context = ssl.create_default_context()
+    server = smtplib.SMTP_SSL('smtp.ucr.ac.cr', 465, context=context,  timeout=15)
+    server.login(user, password)
+    return server, user
+
+def base_email(to:str|list, subject:str, user:str=os.getenv('ucr_email_user')) -> MIMEMultipart:
+    '''
+    Basic email to send. Include message body and attachments if necessary
+    
+    **Parameters**
+    
+    **to**
+    
+    **subject**
+    
+    **user**: default environmental variable called ucr_email_user
+    '''
+    msg = MIMEMultipart()
+    msg['From'] = user
+    msg['To'] = to
+    msg['Subject'] = subject
+    
+    return msg
