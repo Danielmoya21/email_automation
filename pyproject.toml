@@ -10,3 +10,5 @@ dependencies = [
     "xlrd>= 2.0.1"
 ]
 
+[tool.setuptools.package-data]
+ucr_tools = ["plantillas/*"]

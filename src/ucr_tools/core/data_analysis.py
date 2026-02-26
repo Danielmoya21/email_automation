@@ -141,7 +141,7 @@ def tab(df:pl.DataFrame, col:str, groups:list[str]=False, factor=None, decimals:
         )
 
 @apply_labels
-def compute_stat(df:pl.DataFrame, col:str, groups:str|list, stats:list[str]=['mean', 'std'], factor:str=None, decimals:int=2, **kwargs):
+def compute_stat(df:pl.DataFrame, col:str, groups:str|list=None, stats:list[str]=['mean', 'std'], factor:str=None, decimals:int=2, **kwargs):
     """
     Compute aggregated statistics, weights are optional
 
@@ -156,17 +156,22 @@ def compute_stat(df:pl.DataFrame, col:str, groups:str|list, stats:list[str]=['me
         pl.DataFrame: Table with summary stats
     """    
     if not factor:
-        df = df.with_columns(pl.lit(1).alias('__factor'))
+        _df = df.with_columns(pl.lit(1).alias('__factor'))
         factor='__factor'
     if isinstance(stats, str):
         stats = [stats]
+    if not groups:
+        expanded = w_stat(df, col, factor=factor)
+        return df.select(pl.lit(col).alias('var'), *[pl.lit(getattr(expanded, i)).alias(i) for i in stats])
+    
     if isinstance(groups, str):
         groups = [groups]
-    if factor=='__factor':
-        _df (
+    
+    if factor=='__factor':            
+        _df = (
             df.group_by(*groups)
             .agg(*[getattr(c(col), i)().alias(i) for i in stats], c(factor).sum().alias('nobs'))
-            )
+        )
     else:
         stats = stats + ['nobs']
         _df = (
@@ -177,6 +182,6 @@ def compute_stat(df:pl.DataFrame, col:str, groups:str|list, stats:list[str]=['me
                 )[1]
             )
         )
-        
+    
     return _df.sort(*groups).with_columns(cs.float().round(decimals))
 

@@ -4,6 +4,7 @@ from ucr_tools.core import utils
 import smtplib, ssl
 import os, sys
 import traceback
+from importlib.resources import files
 
 def main():
     while True:
@@ -28,7 +29,7 @@ def main():
             grades_path = input('Input zipgrade report file\n> ').strip('"')
             if grades_path: # Generate df with grades
                 grades_path = Path(grades_path)
-                grupo = pd.read_csv(grades_path).rename({'Student First Name':'nombre', 'Percent Correct':'nota', 'External Ref':'correo', 'Student ID':'student_id'}, axis=1)
+                grupo = pd.read_csv(grades_path).rename({'First Name':'nombre', 'Percent Correct':'nota', 'External Id':'correo', 'ZipGrade ID':'student_id'}, axis=1)
                 keep_cols = ['nombre', 'correo', 'nota', 'student_id']
                 grupo = grupo[keep_cols]
             else:
@@ -48,11 +49,19 @@ def main():
                 user, password = os.getenv('ucr_email_user'), os.getenv('ucr_email_password')
                 server.login(user, password)
                 
-                plantilla = Path(input("Plantilla a usar:\n> ").strip('"'))
+                plantilla = Path(input("Plantilla a usar / enter para usar predeterminada:\n> ").strip('"'))
+                if not plantilla.is_file():
+                    plantilla = files('ucr_tools').joinpath('plantillas/plantilla nota.txt')
+                
                 subject = input('Input email subject: ')
                 test = input('Input test name: ')
                 total = int(input('Input total percentage: '))
-                
+                user_cc = input('Do you want to copy somebody?\n> ')
+                cc=[]
+                while user_cc:
+                    cc.append(user_cc)
+                    user_cc = input('> ')
+                    
                 with plantilla.open('rt') as file:
                         plantilla = file.read()
                 for idx, row in grupo.iterrows():
@@ -64,7 +73,8 @@ def main():
                                     'sign':user.split('.')[0].title()}
                     
                     msg = utils.base_email_ucr(user=user, to=row['correo'], email_body=plantilla, format_args=format_args,subject=subject, attachment=row['pdf_dir'])
-                    server.sendmail(to_addrs=[msg['To'], user], from_addr=user, msg = msg.as_string())
+                    tolist = [msg['To'], user]+cc if cc else [msg['To'], user]
+                    server.sendmail(to_addrs=tolist, from_addr=user, msg = msg.as_string())
                     print(f'mail sent to > {idx+1}:  {row["nombre"]}')
             except Exception as e:
                 traceback.print_exc()
